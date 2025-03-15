@@ -1,6 +1,9 @@
 
 import { toast } from "@/components/ui/use-toast";
 
+// Default API key for users who don't provide their own
+const DEFAULT_API_KEY = 'AIzaSyCdCNrlbaz_OJvRQpi1bD6hnF3IUOApz_Y';
+
 // API key would typically be stored in environment variables
 // For demo purposes, we'll use a placeholder that users need to replace
 let apiKey = '';
@@ -16,6 +19,9 @@ export const getGeminiApiKey = (): string => {
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       apiKey = storedKey;
+    } else {
+      // If no user API key is set, use the default key
+      apiKey = DEFAULT_API_KEY;
     }
   }
   return apiKey;

@@ -11,12 +11,15 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ onKeySet }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [isUsingDefault, setIsUsingDefault] = useState(false);
 
   useEffect(() => {
     const savedKey = getGeminiApiKey();
     if (savedKey) {
       setApiKey(savedKey);
       setIsSaved(true);
+      // Check if we're using the default key or a user-provided one
+      setIsUsingDefault(!localStorage.getItem('gemini_api_key'));
       onKeySet?.(true);
     }
   }, [onKeySet]);
@@ -26,6 +29,7 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ onKeySet }) => {
     if (apiKey.trim()) {
       setGeminiApiKey(apiKey.trim());
       setIsSaved(true);
+      setIsUsingDefault(false);
       setIsOpen(false);
       onKeySet?.(true);
     }
@@ -49,6 +53,12 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ onKeySet }) => {
             <h3 className="font-medium">Gemini API Key</h3>
           </div>
           
+          {isUsingDefault && (
+            <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 text-xs rounded-md">
+              Using default API key. You can replace it with your own for higher usage limits.
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <input
@@ -67,8 +77,11 @@ export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({ onKeySet }) => {
             </div>
             
             <div className="flex justify-between items-center">
-              {isSaved && (
-                <span className="text-xs text-green-500">API key saved</span>
+              {isSaved && !isUsingDefault && (
+                <span className="text-xs text-green-500">Your API key saved</span>
+              )}
+              {isSaved && isUsingDefault && (
+                <span className="text-xs text-blue-500">Using default key</span>
               )}
               
               <div className="ml-auto">

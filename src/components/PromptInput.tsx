@@ -17,11 +17,8 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim() && !isProcessing && isApiKeySet) {
+    if (prompt.trim() && !isProcessing) {
       onSubmit(prompt.trim());
-    } else if (!isApiKeySet) {
-      // Show a message or focus on the API key input
-      alert("Please set your Gemini API key first");
     }
   };
 
@@ -39,8 +36,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
       <div 
         className={cn(
           "glass-panel transition-all duration-300 relative",
-          isFocused ? "shadow-md ring-2 ring-primary/20" : "shadow-sm",
-          !isApiKeySet && "ring-2 ring-amber-500/50"
+          isFocused ? "shadow-md ring-2 ring-primary/20" : "shadow-sm"
         )}
       >
         <form onSubmit={handleSubmit} className="relative">
@@ -49,10 +45,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
             onChange={(e) => setPrompt(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={isApiKeySet 
-              ? "Describe the web app you want to create..." 
-              : "Set your Gemini API key first, then describe what you want to create..."
-            }
+            placeholder="Describe the web app you want to create..."
             className="w-full h-32 resize-none bg-transparent p-4 pr-24 text-foreground focus:outline-none"
             disabled={isProcessing}
           />
@@ -71,10 +64,10 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
             
             <button
               type="submit"
-              disabled={!prompt.trim() || isProcessing || !isApiKeySet}
+              disabled={!prompt.trim() || isProcessing}
               className={cn(
                 "p-2 rounded-md transition-all duration-200 flex items-center justify-center",
-                prompt.trim() && !isProcessing && isApiKeySet
+                prompt.trim() && !isProcessing
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
               )}
