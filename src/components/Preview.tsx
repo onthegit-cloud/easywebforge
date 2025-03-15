@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowDown, Code, Copy, Download, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CodeOutput } from './CodeOutput';
+import { Sandbox } from './Sandbox';
 
 interface PreviewProps {
   isGenerating: boolean;
@@ -105,7 +107,7 @@ export const Preview: React.FC<PreviewProps> = ({
       </div>
       
       <div className="flex-1 relative overflow-hidden">
-        {isGenerating && !(activeTab === 'preview' && previewHtml) && (
+        {isGenerating && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm z-10">
             <Loader2 size={40} className="text-primary animate-spin mb-4" />
             <p className="text-muted-foreground animate-pulse">Generating your application...</p>
@@ -114,11 +116,10 @@ export const Preview: React.FC<PreviewProps> = ({
         
         {activeTab === 'preview' ? (
           previewHtml ? (
-            <iframe
-              srcDoc={previewHtml}
-              title="Preview"
-              className="w-full h-full border-0"
-              sandbox="allow-scripts"
+            <Sandbox 
+              htmlContent={previewHtml} 
+              isLoading={isGenerating}
+              onRefresh={onRefresh}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -126,10 +127,14 @@ export const Preview: React.FC<PreviewProps> = ({
             </div>
           )
         ) : (
-          <div className="relative h-full">
-            <pre className="h-full overflow-auto p-4 text-sm font-mono">
-              <code className="language-jsx">{generatedCode || 'No code generated yet'}</code>
-            </pre>
+          <div className="h-full overflow-auto p-4">
+            {generatedCode ? (
+              <CodeOutput code={generatedCode} language="jsx" filename="component.jsx" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                No code generated yet
+              </div>
+            )}
             
             {showScrollHint && (
               <div 

@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Send, Trash, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getGeminiApiKey } from '@/services/geminiService';
+import { ApiKeyForm } from './ApiKeyForm';
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -11,11 +13,15 @@ interface PromptInputProps {
 export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing }) => {
   const [prompt, setPrompt] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-
+  const [isApiKeySet, setIsApiKeySet] = useState(!!getGeminiApiKey());
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim() && !isProcessing) {
+    if (prompt.trim() && !isProcessing && isApiKeySet) {
       onSubmit(prompt.trim());
+    } else if (!isApiKeySet) {
+      // Show a message or focus on the API key input
+      alert("Please set your Gemini API key first");
     }
   };
 
@@ -25,10 +31,16 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
 
   return (
     <div className="w-full">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-medium text-foreground">Describe your application</h3>
+        <ApiKeyForm onKeySet={setIsApiKeySet} />
+      </div>
+      
       <div 
         className={cn(
           "glass-panel transition-all duration-300 relative",
           isFocused ? "shadow-md ring-2 ring-primary/20" : "shadow-sm",
+          !isApiKeySet && "ring-2 ring-amber-500/50"
         )}
       >
         <form onSubmit={handleSubmit} className="relative">
@@ -37,7 +49,10 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
             onChange={(e) => setPrompt(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Describe the web app you want to create..."
+            placeholder={isApiKeySet 
+              ? "Describe the web app you want to create..." 
+              : "Set your Gemini API key first, then describe what you want to create..."
+            }
             className="w-full h-32 resize-none bg-transparent p-4 pr-24 text-foreground focus:outline-none"
             disabled={isProcessing}
           />
@@ -56,10 +71,10 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, isProcessing
             
             <button
               type="submit"
-              disabled={!prompt.trim() || isProcessing}
+              disabled={!prompt.trim() || isProcessing || !isApiKeySet}
               className={cn(
                 "p-2 rounded-md transition-all duration-200 flex items-center justify-center",
-                prompt.trim() && !isProcessing
+                prompt.trim() && !isProcessing && isApiKeySet
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-gray-200 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
               )}
