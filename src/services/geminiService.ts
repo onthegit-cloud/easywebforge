@@ -54,10 +54,22 @@ export const generateCode = async ({ prompt, model = 'gemini-1.5-pro' }: Generat
           {
             parts: [
               {
-                text: `Create a React component based on this description: ${prompt}. 
-                       Use Tailwind CSS for styling.
-                       Return only the complete React code without any explanations.
-                       The code should be ready to use in a React+Tailwind project.`
+                text: `Create a complete, fully functional React component based on this description: ${prompt}.
+                
+                Requirements:
+                - Use Tailwind CSS for styling
+                - Include necessary imports (React, hooks, etc.)
+                - Implement actual functionality, not just UI
+                - Add proper event handlers and state management
+                - Include comments explaining complex logic
+                - Make the component responsive
+                - Follow React best practices
+                - Use modern React patterns (hooks, functional components)
+                
+                Return ONLY the complete React code without any explanations or markdown.
+                The code should be ready to use in a React+Tailwind project.
+                DO NOT omit any parts of the code for brevity.
+                Include ALL necessary imports, event handlers, and state variables.`
               }
             ]
           }
@@ -90,7 +102,10 @@ export const generateCode = async ({ prompt, model = 'gemini-1.5-pro' }: Generat
     const codeBlockRegex = /```(?:jsx?|tsx?|react)?\s*([\s\S]*?)```/;
     const match = generatedText.match(codeBlockRegex);
     
+    // If we found a code block, use that; otherwise use the entire response
     const cleanedCode = match ? match[1].trim() : generatedText.trim();
+    
+    console.log("Generated code:", cleanedCode.substring(0, 200) + "...");
     
     return {
       code: cleanedCode,
@@ -146,42 +161,81 @@ export const generateHtmlPreview = (reactCode: string): string => {
   
   <script type="text/babel">
     try {
+      // Define common mock functions and libraries that components might need
+      window.fetch = window.fetch || function mockFetch(url) {
+        console.log('Mock fetch called with:', url);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ data: 'Mock data' }),
+          text: () => Promise.resolve('Mock text response')
+        });
+      };
+      
+      // Mock router functions
+      window.navigate = (path) => console.log('Navigate to:', path);
+      
+      // Mock event functions
+      window.preventDefault = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        return false;
+      };
+      
       ${reactCode}
       
       // Try different approaches to render the component
       const renderComponent = () => {
-        // Try to find the component by looking for capitalized variables
-        const componentNames = Object.keys(window).filter(key => 
-          typeof window[key] === 'function' && 
-          /^[A-Z]/.test(key) && 
-          key !== 'React' && 
-          key !== 'ReactDOM' &&
-          key !== 'Babel'
-        );
+        // Try to find the component by looking for capitalized variables or function/class declarations
+        const componentRegex = /(?:function|const)\\s+([A-Z][A-Za-z0-9_]*)\\s*(?:=|\\()/g;
+        const matches = [...reactCode.matchAll(componentRegex)];
+        const componentNames = matches.map(match => match[1])
+          .filter(name => typeof window[name] === 'function' || React.isValidElement(window[name]));
         
         if (componentNames.length > 0) {
           // Use the first found component
+          const MainComponent = window[componentNames[0]];
+          console.log('Rendering component:', componentNames[0]);
           return ReactDOM.createRoot(document.getElementById('root')).render(
-            React.createElement(window[componentNames[0]])
+            React.createElement(MainComponent)
           );
         }
         
         // Try to extract from export default or export const Component
         const exportDefaultMatch = \`${reactCode}\`.match(/export\\s+default\\s+([A-Za-z0-9_]+)/);
         if (exportDefaultMatch && exportDefaultMatch[1] && window[exportDefaultMatch[1]]) {
+          const ExportedComponent = window[exportDefaultMatch[1]];
+          console.log('Rendering exported default component:', exportDefaultMatch[1]);
           return ReactDOM.createRoot(document.getElementById('root')).render(
-            React.createElement(window[exportDefaultMatch[1]])
+            React.createElement(ExportedComponent)
           );
         }
         
         const exportConstMatch = \`${reactCode}\`.match(/export\\s+const\\s+([A-Za-z0-9_]+)/);
         if (exportConstMatch && exportConstMatch[1] && window[exportConstMatch[1]]) {
+          const ExportedConstComponent = window[exportConstMatch[1]];
+          console.log('Rendering exported const component:', exportConstMatch[1]);
           return ReactDOM.createRoot(document.getElementById('root')).render(
-            React.createElement(window[exportConstMatch[1]])
+            React.createElement(ExportedConstComponent)
           );
         }
         
-        throw new Error("Could not find a React component to render");
+        // Look for any function or class that might be a component
+        for (const key in window) {
+          if (typeof window[key] === 'function' && /^[A-Z]/.test(key) && key !== 'React' && key !== 'ReactDOM') {
+            console.log('Found potential component:', key);
+            const PotentialComponent = window[key];
+            try {
+              console.log('Attempting to render component:', key);
+              return ReactDOM.createRoot(document.getElementById('root')).render(
+                React.createElement(PotentialComponent)
+              );
+            } catch (error) {
+              console.error('Failed to render component:', key, error);
+              continue;
+            }
+          }
+        }
+        
+        throw new Error("Could not find a React component to render. Make sure your component is properly defined and exported.");
       }
       
       // Call the render function
@@ -192,6 +246,7 @@ export const generateHtmlPreview = (reactCode: string): string => {
         <div class="error-message">
           <h3>Error Rendering Component</h3>
           <p>\${error.message}</p>
+          <pre>\${error.stack}</pre>
         </div>
       \`;
     }
