@@ -27,6 +27,7 @@ export const Sandbox: React.FC<SandboxProps> = ({
       const iframe = iframeRef.current;
       if (!iframe) return;
       
+      // Clear previous timeout
       const timeoutId = setTimeout(() => {
         setError('Preview timed out. The code might contain an infinite loop or other runtime errors.');
         setIsRendering(false);
@@ -44,6 +45,7 @@ export const Sandbox: React.FC<SandboxProps> = ({
       const handleLoad = () => {
         clearTimeout(timeoutId);
         setIsRendering(false);
+        console.log("Iframe loaded successfully");
       };
       
       iframe.addEventListener('load', handleLoad);
@@ -53,6 +55,7 @@ export const Sandbox: React.FC<SandboxProps> = ({
         clearTimeout(timeoutId);
       };
     } catch (err) {
+      console.error("Sandbox error:", err);
       setError(`Error rendering preview: ${err instanceof Error ? err.message : String(err)}`);
       setIsRendering(false);
     }

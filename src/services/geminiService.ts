@@ -86,11 +86,11 @@ export const generateCode = async ({ prompt, model = 'gemini-1.5-pro' }: Generat
       throw new Error('No code was generated');
     }
 
-    // Basic extraction of code blocks from the response
+    // Better extraction of code blocks from the response
     const codeBlockRegex = /```(?:jsx?|tsx?|react)?\s*([\s\S]*?)```/;
     const match = generatedText.match(codeBlockRegex);
     
-    const cleanedCode = match ? match[1].trim() : generatedText;
+    const cleanedCode = match ? match[1].trim() : generatedText.trim();
     
     return {
       code: cleanedCode,
@@ -107,11 +107,9 @@ export const generateCode = async ({ prompt, model = 'gemini-1.5-pro' }: Generat
   }
 };
 
-// Generate HTML preview from React code (simple approach for demo)
+// Improved HTML preview generator for React code
 export const generateHtmlPreview = (reactCode: string): string => {
-  // This is a simplified approach - in a real implementation, you would use a more robust method
-  // like server-side rendering or a sandboxed environment
-  
+  // Create a more robust HTML template with proper error handling
   const htmlTemplate = `
 <!DOCTYPE html>
 <html>
@@ -123,39 +121,79 @@ export const generateHtmlPreview = (reactCode: string): string => {
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <title>React Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    #root {
+      width: 100%;
+      height: 100%;
+    }
+    .error-message {
+      color: #ef4444;
+      padding: 1rem;
+      margin: 1rem;
+      border: 1px solid #f87171;
+      border-radius: 0.375rem;
+      background-color: #fef2f2;
+    }
+  </style>
 </head>
 <body>
   <div id="root"></div>
   
   <script type="text/babel">
-    ${reactCode}
-    
-    // Render the component to the DOM
-    const componentName = Object.keys(window).find(key => 
-      typeof window[key] === 'function' && 
-      /^[A-Z]/.test(key) && 
-      key !== 'React' && 
-      key !== 'ReactDOM'
-    );
-    
-    if (componentName) {
-      ReactDOM.render(React.createElement(window[componentName]), document.getElementById('root'));
-    } else {
-      // Fallback if we can't determine the component name
-      // Try to execute the last line if it's an export default statement
-      try {
-        const lines = \`${reactCode}\`.split('\\n');
-        const lastLine = lines[lines.length - 1];
-        if (lastLine.includes('export default')) {
-          const componentNameMatch = lastLine.match(/export\\s+default\\s+([A-Za-z0-9_]+)/);
-          if (componentNameMatch && componentNameMatch[1]) {
-            ReactDOM.render(React.createElement(window[componentNameMatch[1]]), document.getElementById('root'));
-          }
+    try {
+      ${reactCode}
+      
+      // Try different approaches to render the component
+      const renderComponent = () => {
+        // Try to find the component by looking for capitalized variables
+        const componentNames = Object.keys(window).filter(key => 
+          typeof window[key] === 'function' && 
+          /^[A-Z]/.test(key) && 
+          key !== 'React' && 
+          key !== 'ReactDOM' &&
+          key !== 'Babel'
+        );
+        
+        if (componentNames.length > 0) {
+          // Use the first found component
+          return ReactDOM.createRoot(document.getElementById('root')).render(
+            React.createElement(window[componentNames[0]])
+          );
         }
-      } catch (e) {
-        console.error('Error rendering component:', e);
-        document.getElementById('root').innerHTML = '<div class="p-4 text-red-500">Error rendering component</div>';
+        
+        // Try to extract from export default or export const Component
+        const exportDefaultMatch = \`${reactCode}\`.match(/export\\s+default\\s+([A-Za-z0-9_]+)/);
+        if (exportDefaultMatch && exportDefaultMatch[1] && window[exportDefaultMatch[1]]) {
+          return ReactDOM.createRoot(document.getElementById('root')).render(
+            React.createElement(window[exportDefaultMatch[1]])
+          );
+        }
+        
+        const exportConstMatch = \`${reactCode}\`.match(/export\\s+const\\s+([A-Za-z0-9_]+)/);
+        if (exportConstMatch && exportConstMatch[1] && window[exportConstMatch[1]]) {
+          return ReactDOM.createRoot(document.getElementById('root')).render(
+            React.createElement(window[exportConstMatch[1]])
+          );
+        }
+        
+        throw new Error("Could not find a React component to render");
       }
+      
+      // Call the render function
+      renderComponent();
+    } catch (error) {
+      console.error('Error rendering component:', error);
+      document.getElementById('root').innerHTML = \`
+        <div class="error-message">
+          <h3>Error Rendering Component</h3>
+          <p>\${error.message}</p>
+        </div>
+      \`;
     }
   </script>
 </body>

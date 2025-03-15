@@ -33,17 +33,26 @@ export const Preview: React.FC<PreviewProps> = ({
   }, [generatedCode, activeTab]);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedCode);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    if (!generatedCode) return;
+    
+    navigator.clipboard.writeText(generatedCode)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
   };
 
   const downloadCode = () => {
+    if (!generatedCode) return;
+    
     const blob = new Blob([generatedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'generated-app.jsx';
+    a.download = 'generated-component.jsx';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -127,7 +136,7 @@ export const Preview: React.FC<PreviewProps> = ({
             </div>
           )
         ) : (
-          <div className="h-full overflow-auto p-4">
+          <div className="h-full overflow-auto p-4 relative">
             {generatedCode ? (
               <CodeOutput code={generatedCode} language="jsx" filename="component.jsx" />
             ) : (
@@ -138,7 +147,7 @@ export const Preview: React.FC<PreviewProps> = ({
             
             {showScrollHint && (
               <div 
-                className="absolute bottom-4 right-4 bg-primary text-white text-xs py-1 px-2 rounded-full flex items-center animate-bounce opacity-70 hover:opacity-100 transition-opacity duration-200"
+                className="absolute bottom-4 right-4 bg-primary text-white text-xs py-1 px-2 rounded-full flex items-center animate-bounce opacity-70 hover:opacity-100 transition-opacity duration-200 cursor-pointer"
                 onClick={() => setShowScrollHint(false)}
               >
                 <ArrowDown size={12} className="mr-1" />
